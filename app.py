@@ -42,7 +42,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     # Add the system instruction invisibly
     st.session_state.chat = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-pro-latest",
         system_instruction=SYSTEM_INSTRUCTIONS
     ).start_chat(history=[])
 
