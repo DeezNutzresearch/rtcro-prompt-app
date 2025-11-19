@@ -1,30 +1,73 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.title("🛠️ System Diagnostic")
+# 1. CONFIGURE THE PAGE
+st.set_page_config(page_title="RTCRO Prompt Engineer", page_icon="🤖")
+st.title("🤖 Hybrid Meta-Prompting System")
+st.caption("Powered by Google Gemini 3.0 • RTCRO Framework")
 
-# 1. Configure API
+# 2. SETUP API
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key.")
+    st.error("Missing API Key. Please configure it in Streamlit Secrets.")
     st.stop()
 
-# 2. Ask Google what models are available
-st.write("Contacting Google API to find valid models...")
+# 3. THE "BRAIN" (System Instructions)
+SYSTEM_INSTRUCTIONS = """
+ROLE:
+You are a Senior AI Prompt Architect. Your goal is to build the perfect "Meta-Prompt" using the RTCRO framework.
 
-try:
-    available_models = []
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            available_models.append(m.name)
+PROCESS:
+PHASE 1: CONTEXT GATHERING
+1. Analyze the user's request.
+2. If vague, ask clarifying questions (Goal, Audience, Constraints).
+3. Repeat until you have a Context Score of 90%+.
 
-    if available_models:
-        st.success("✅ SUCCESS! The server found these valid models:")
-        st.json(available_models)
-        st.info("Copy one of the names above (e.g. 'models/gemini-pro') and put it in your app.py code.")
-    else:
-        st.error("⚠️ Connection made, but no models returned. Your API Key might be restricted.")
+PHASE 2: RTCRO PIPELINE
+Once context is saturated, execute:
+[R]esearch best practices.
+[T]emplate selection (CO-STAR for business, CRISPE for tech).
+[C]ontext injection.
+[R]eview for safety.
+[O]ptimize for brevity.
 
-except Exception as e:
-    st.error(f"❌ CRITICAL ERROR: {e}")
+OUTPUT:
+Start final response with "🚀 HERE IS YOUR OPTIMIZED SYSTEM PROMPT:".
+"""
+
+# 4. INITIALIZE CHAT MEMORY
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    
+    # --- THIS IS THE FIX ---
+    # We are using the model exactly as it appeared in your diagnostic list
+    st.session_state.chat = genai.GenerativeModel(
+        model_name="gemini-3-pro-preview",
+        system_instruction=SYSTEM_INSTRUCTIONS
+    ).start_chat(history=[])
+
+# 5. DISPLAY CHAT HISTORY
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# 6. HANDLE USER INPUT
+if prompt := st.chat_input("Describe the prompt you need..."):
+    # Show user message
+    st.chat_message("user").markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Generate AI Response
+    try:
+        with st.spinner("Gemini 3 is thinking..."):
+            response = st.session_state.chat.send_message(prompt)
+            text_response = response.text
+            
+        # Show AI message
+        with st.chat_message("assistant"):
+            st.markdown(text_response)
+        st.session_state.messages.append({"role": "assistant", "content": text_response})
+        
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
