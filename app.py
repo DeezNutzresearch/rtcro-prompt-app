@@ -43,7 +43,7 @@ if "messages" not in st.session_state:
     # --- THIS IS THE FIX ---
     # We are using the model exactly as it appeared in your diagnostic list
     st.session_state.chat = genai.GenerativeModel(
-        model_name="gemini-3-pro-preview",
+        model_name="gemini-2.0-flash",
         system_instruction=SYSTEM_INSTRUCTIONS
     ).start_chat(history=[])
 
